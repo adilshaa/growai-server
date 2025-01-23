@@ -25,7 +25,7 @@ RUN . /opt/venv/bin/activate && pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expose ports
-EXPOSE 3000 5000
+EXPOSE 3000 55124
 
 # Copy and set up start script
 COPY start.sh /
