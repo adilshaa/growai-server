@@ -16,7 +16,7 @@ import argparse
 
 # Add argument parsing for dynamic port assignment
 parser = argparse.ArgumentParser()
-parser.add_argument('--port', type=int, default=5000)
+parser.add_argument('--port', type=int, default=5400)
 args = parser.parse_args()
 
 # Configure logging
