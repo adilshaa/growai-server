@@ -12,6 +12,12 @@ from urllib.parse import urlparse
 from jsonschema import validate, ValidationError
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+import argparse
+
+# Add argument parsing for dynamic port assignment
+parser = argparse.ArgumentParser()
+parser.add_argument('--port', type=int, default=5000)
+args = parser.parse_args()
 
 # Configure logging
 logging.basicConfig(
@@ -353,5 +359,5 @@ def get_provider_status():
     return jsonify(status)
 
 if __name__ == '__main__':
-    print("Starting GPT service on port 5000...")
-    app.run(port=5000, debug=False)
+    print(f"Starting GPT service on port {args.port}...")
+    app.run(port=args.port, debug=False)

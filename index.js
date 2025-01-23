@@ -1,41 +1,101 @@
 const express = require("express");
 const cors = require("cors");
-const fetch = require("node-fetch"); // Add this import
+const fetch = require("node-fetch");
+const { spawn } = require("child_process");
+const path = require("path");
+const net = require("net");
 const routes = require("./routes");
 const testRunner = require("./src/services/testRunner");
 const reportingService = require("./src/services/reportingService");
-const { spawn } = require("child_process");
-const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || "http://localhost:5000";
+const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL;
 
 // Spawn Python process
 let pythonProcess;
 
-function startPythonService() {
-	const pythonPath = path.join(__dirname, "app.py");
-	pythonProcess = spawn("python", [pythonPath]);
-
-	pythonProcess.stdout.on("data", (data) => {
-		console.log("Python service output:", data.toString());
-	});
-
-	pythonProcess.stderr.on("data", (data) => {
-		console.error("Python service error:", data.toString());
-	});
-
-	pythonProcess.on("close", (code) => {
-		console.log(`Python service exited with code ${code}`);
-		// Restart the service if it crashes
-		setTimeout(startPythonService, 5000);
-	});
+async function findAvailablePort(startPort) {
+	while (true) {
+		try {
+			await new Promise((resolve, reject) => {
+				const server = net
+					.createServer()
+					.once("error", (err) => {
+						if (err.code === "EADDRINUSE") resolve(false);
+						else reject(err);
+					})
+					.once("listening", () => {
+						server.close();
+						resolve(true);
+					})
+					.listen(startPort);
+			});
+			return startPort;
+		} catch (err) {
+			startPort++;
+		}
+	}
 }
 
-// Start Python service when Node.js server starts
-startPythonService();
+async function startPythonService() {
+	try {
+		if (pythonProcess) {
+			pythonProcess.kill();
+		}
+
+		const availablePort = await findAvailablePort(5000);
+		const pythonPath = path.join(__dirname, "app.py");
+
+		pythonProcess = spawn("python", [pythonPath, "--port", availablePort.toString()]);
+		process.env.PYTHON_SERVICE_URL = `http://localhost:${availablePort}`;
+
+		pythonProcess.stdout.on("data", (data) => {
+			console.log("Python service output:", data.toString());
+		});
+
+		pythonProcess.stderr.on("data", (data) => {
+			console.error("Python service error:", data.toString());
+			if (data.toString().includes("Address already in use")) {
+				setTimeout(() => startPythonService(), 1000);
+			}
+		});
+
+		pythonProcess.on("close", (code) => {
+			console.log(`Python service exited with code ${code}`);
+			if (code !== 0) {
+				setTimeout(() => startPythonService(), 5000);
+			}
+		});
+	} catch (error) {
+		console.error("Failed to start Python service:", error);
+		setTimeout(() => startPythonService(), 5000);
+	}
+}
+
+let isShuttingDown = false;
+
+process.on("SIGINT", async () => {
+	if (isShuttingDown) return;
+	isShuttingDown = true;
+
+	console.log("Gracefully shutting down...");
+
+	if (pythonProcess) {
+		pythonProcess.kill();
+	}
+
+	server.close(() => {
+		console.log("Server closed");
+		process.exit(0);
+	});
+});
+
+const server = app.listen(PORT, async () => {
+	console.log(`Server running on port ${PORT}`);
+	await startPythonService();
+});
 
 app.use(cors());
 app.use(express.json());
@@ -125,16 +185,6 @@ process.on("SIGINT", () => {
 		pythonProcess.kill();
 	}
 	process.exit();
-});
-
-app.listen(PORT, () => {
-	console.log(`Server running on port ${PORT}`);
-	console.log("Available endpoints:");
-	console.log("- POST /api/v1/test-model");
-	console.log("- POST /api/v1/batch-test");
-	console.log("- GET  /api/v1/metrics");
-	console.log("- GET  /api/v1/run-sample-test");
-	console.log("- GPT Service running on localhost:5000");
 });
 
 module.exports = app;
