@@ -1,0 +1,4 @@
+flask==2.0.1
+flask-cors==3.0.10
+g4f==0.1.9.0
+jsonschema==4.17.3
