@@ -1,4 +1,4 @@
-FROM node:16-slim
+FROM node:22.11.0 
 
 # Install Python and build dependencies
 RUN apt-get update && \
