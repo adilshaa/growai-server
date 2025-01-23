@@ -12,7 +12,7 @@ WORKDIR /usr/src/app
 COPY package*.json requirements.txt ./
 
 # Install Node dependencies
-RUN npm ci
+# RUN npm ci
 
 # Install Python dependencies
 RUN pip3 install --no-cache-dir -r requirements.txt
