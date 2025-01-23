@@ -2,8 +2,10 @@ services:
     - type: web
       name: allgpt-service
       env: docker
-      buildCommand: npm install && pip install -r requirements.txt
-      startCommand: node index.js
+      plan: free
+      healthCheckPath: /api/providers/status
       envVars:
+          - key: NODE_ENV
+            value: production
           - key: PORT
             value: 3000

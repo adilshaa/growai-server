@@ -1,25 +1,29 @@
-FROM node:16
+FROM node:16-slim
 
-# Install Python
-RUN apt-get update && apt-get install -y python3 python3-pip
+# Install Python and build dependencies
+RUN apt-get update && \
+    apt-get install -y python3 python3-pip python3-dev build-essential && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-# Create app directory
 WORKDIR /usr/src/app
 
-# Copy package.json and requirements.txt
-COPY package*.json ./
-COPY requirements.txt ./
+# Copy dependency files
+COPY package*.json requirements.txt ./
 
-# Install dependencies
-RUN npm install
-RUN pip3 install -r requirements.txt
+# Install Node dependencies
+RUN npm ci
+
+# Install Python dependencies
+RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Bundle app source
 COPY . .
 
 # Expose ports
-EXPOSE 3000
-EXPOSE 5000
+EXPOSE 3000 5000
 
-# Start command
-CMD [ "node", "index.js" ]
+# Start command using a shell script
+COPY start.sh /
+RUN chmod +x /start.sh
+CMD ["/start.sh"]
