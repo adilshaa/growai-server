@@ -44,8 +44,8 @@ async function startPythonService() {
 		if (pythonProcess) {
 			pythonProcess.kill();
 		}
-
-		const availablePort = await findAvailablePort(5000);
+		
+		const availablePort = await findAvailablePort(5400);
 		const pythonPath = path.join(__dirname, "app.py");
 
 		pythonProcess = spawn("python", [pythonPath, "--port", availablePort.toString()]);
