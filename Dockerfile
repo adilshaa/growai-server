@@ -12,7 +12,7 @@ WORKDIR /usr/src/app
 COPY package*.json requirements.txt ./
 
 # Install Node dependencies
-# RUN npm ci
+RUN npm install
 
 # Install Python dependencies
 RUN pip3 install --no-cache-dir -r requirements.txt
@@ -23,7 +23,7 @@ COPY . .
 # Expose ports
 EXPOSE 3000 5000
 
-# Start command using a shell script
+# Copy and set up start script
 COPY start.sh /
 RUN chmod +x /start.sh
 CMD ["/start.sh"]
